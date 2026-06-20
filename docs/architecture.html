@@ -1,0 +1,394 @@
+<title>OpsPulse — C4 Architecture</title>
+<style>
+  :root {
+    --ground: #080F1A;
+    --surface: #0F1E2E;
+    --surface-2: #162438;
+    --text: #C8D8E8;
+    --muted: #5A7A96;
+    --accent: #22D3EE;
+    --accent-bg: rgba(34,211,238,0.10);
+    --ext: #F97316;
+    --ext-bg: rgba(249,115,22,0.10);
+    --person: #A78BFA;
+    --person-bg: rgba(167,139,250,0.10);
+    --db: #34D399;
+    --db-bg: rgba(52,211,153,0.08);
+    --border: #1A3050;
+    --mono: 'Courier New','Lucida Console',monospace;
+    --sans: -apple-system,'Segoe UI',sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ground); color: var(--text); font-family: var(--sans); }
+
+  /* ── Header ── */
+  .hdr { padding: 36px 40px 0; }
+  .hdr-eye {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+  }
+  .hdr-title {
+    font-family: var(--mono); font-size: 34px; font-weight: 700;
+    letter-spacing: -.02em; line-height: 1; color: var(--text);
+  }
+  .hdr-title em { color: var(--accent); font-style: normal; }
+  .hdr-sub {
+    font-size: 13px; color: var(--muted); margin-top: 6px; margin-bottom: 20px;
+  }
+  .pulse-wrap { width: 100%; overflow: hidden; height: 38px; }
+  .pulse-wrap svg { display: block; }
+  .pulse-path {
+    fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: .55;
+    stroke-dasharray: 1400; stroke-dashoffset: 1400;
+    animation: draw 1.8s cubic-bezier(.4,0,.2,1) .3s forwards;
+  }
+  .flat-path { fill: none; stroke: var(--border); stroke-width: 1; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pulse-path { animation: none; stroke-dashoffset: 0; } }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; padding: 0 40px;
+    border-bottom: 1px solid var(--border); margin-bottom: 28px;
+  }
+  .tab {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    padding: 11px 22px; cursor: pointer; color: var(--muted);
+    border: none; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; background: none; transition: all .15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Panels ── */
+  .panel { display: none; padding: 0 40px 40px; }
+  .panel.on { display: block; }
+
+  /* ── Diagram ── */
+  .dia {
+    position: relative; margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px;
+  }
+  .dia svg.arrows {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; pointer-events: none; overflow: visible;
+  }
+
+  /* ── C4 boxes ── */
+  .box {
+    position: absolute; border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 13px; background: var(--surface-2);
+  }
+  .box .tag {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+  }
+  .box .name {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 3px; line-height: 1.25;
+  }
+  .box .tech {
+    font-family: var(--mono); font-size: 9.5px; color: var(--muted); margin-bottom: 3px;
+  }
+  .box .desc { font-size: 11px; color: var(--muted); line-height: 1.45; }
+
+  .box.sys  { border-color: var(--accent); background: var(--accent-bg); }
+  .box.sys  .tag, .box.sys  .name { color: var(--accent); }
+  .box.ext  { border-color: var(--ext); background: var(--ext-bg); }
+  .box.ext  .tag { color: var(--ext); }
+  .box.per  { border-color: var(--person); background: var(--person-bg); }
+  .box.per  .tag { color: var(--person); }
+  .box.db   { border-color: var(--db); background: var(--db-bg); }
+  .box.db   .tag { color: var(--db); }
+
+  /* ── Arrow label overlay ── */
+  .albl {
+    position: absolute; font-family: var(--mono); font-size: 9px;
+    color: var(--muted); background: var(--surface);
+    padding: 2px 5px; border-radius: 2px; white-space: nowrap; pointer-events: none;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .leg {
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .05em;
+  }
+  .leg-dot {
+    width: 11px; height: 11px; border-radius: 2px; border: 1px solid; flex-shrink: 0;
+  }
+</style>
+
+<div class="hdr">
+  <div class="hdr-eye">C4 Model Architecture</div>
+  <div class="hdr-title"><em>Ops</em>Pulse</div>
+  <div class="hdr-sub">AI-powered operational intelligence for Telegram teams — Gemini · FastAPI · PostgreSQL</div>
+  <div class="pulse-wrap">
+    <svg viewBox="0 0 900 38" preserveAspectRatio="none" width="100%" height="38">
+      <path class="flat-path" d="M0,19 H900"/>
+      <path class="pulse-path"
+        d="M0,19 H200 L218,4 L234,34 L250,4 L266,34 L278,19 H420 L434,8 L444,30 L452,19 H900"/>
+    </svg>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="show('l1',this)">Level 1 — System Context</button>
+  <button class="tab"    onclick="show('l2',this)">Level 2 — Container</button>
+</div>
+
+<!-- ═══════════ LEVEL 1 ═══════════ -->
+<div id="l1" class="panel on">
+
+  <!-- 760 × 490 diagram -->
+  <div class="dia" style="width:760px;height:490px;">
+
+    <!-- SVG arrows -->
+    <svg class="arrows" viewBox="0 0 760 490">
+      <defs>
+        <marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 Z" fill="#5A7A96"/>
+        </marker>
+        <marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 Z" fill="#5A7A96"/>
+        </marker>
+      </defs>
+
+      <!-- Team Member ↔ Telegram  (bidirectional use) -->
+      <line x1="195" y1="77" x2="550" y2="77" stroke="#5A7A96" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="550" y1="85" x2="195" y2="85" stroke="#5A7A96" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Telegram → OpsPulse (webhook) -->
+      <line x1="633" y1="125" x2="428" y2="197" stroke="#5A7A96" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- OpsPulse → Gemini -->
+      <line x1="480" y1="252" x2="545" y2="367" stroke="#5A7A96" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- OpsPulse → PostgreSQL -->
+      <line x1="280" y1="252" x2="205" y2="367" stroke="#5A7A96" stroke-width="1" marker-end="url(#arr)"/>
+    </svg>
+
+    <!-- Arrow labels -->
+    <div class="albl" style="left:340px;top:63px;">sends messages</div>
+    <div class="albl" style="left:548px;top:152px;">webhook updates</div>
+    <div class="albl" style="left:500px;top:298px;">classify / summarize</div>
+    <div class="albl" style="left:168px;top:298px;">store & query</div>
+
+    <!-- Person -->
+    <div class="box per" style="left:30px;top:30px;width:165px;min-height:95px;">
+      <div class="tag">Person</div>
+      <div class="name">Team Member</div>
+      <div class="desc">Uses Telegram to communicate operational information</div>
+    </div>
+
+    <!-- Telegram (external) -->
+    <div class="box ext" style="left:550px;top:30px;width:175px;min-height:95px;">
+      <div class="tag">External System</div>
+      <div class="name">Telegram</div>
+      <div class="tech">[Bot API]</div>
+      <div class="desc">Routes messages and delivers bot replies to group chats</div>
+    </div>
+
+    <!-- OpsPulse (this system) -->
+    <div class="box sys" style="left:270px;top:192px;width:210px;min-height:110px;">
+      <div class="tag">Software System</div>
+      <div class="name">OpsPulse</div>
+      <div class="desc">Captures team messages, classifies them by category and urgency, delivers a daily digest with recommended actions</div>
+    </div>
+
+    <!-- Google Gemini (external) -->
+    <div class="box ext" style="left:525px;top:367px;width:210px;min-height:95px;">
+      <div class="tag">External System</div>
+      <div class="name">Google Gemini</div>
+      <div class="tech">[gemini-2.5-flash]</div>
+      <div class="desc">AI classification, transcription, extraction, and summarization</div>
+    </div>
+
+    <!-- PostgreSQL -->
+    <div class="box db" style="left:25px;top:367px;width:190px;min-height:95px;">
+      <div class="tag">Database</div>
+      <div class="name">PostgreSQL</div>
+      <div class="tech">[SQLModel / psycopg2]</div>
+      <div class="desc">Persists classified Entries for the 24h digest window</div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="border-color:var(--person);background:var(--person-bg)"></div>Person</div>
+    <div class="leg"><div class="leg-dot" style="border-color:var(--accent);background:var(--accent-bg)"></div>This System</div>
+    <div class="leg"><div class="leg-dot" style="border-color:var(--ext);background:var(--ext-bg)"></div>External System</div>
+    <div class="leg"><div class="leg-dot" style="border-color:var(--db);background:var(--db-bg)"></div>Database</div>
+    <div class="leg" style="margin-left:auto;">
+      <svg width="30" height="12" viewBox="0 0 30 12">
+        <line x1="0" y1="6" x2="24" y2="6" stroke="#5A7A96" stroke-width="1" marker-end="url(#arr)"/>
+      </svg>
+      synchronous call
+    </div>
+    <div class="leg">
+      <svg width="30" height="12" viewBox="0 0 30 12">
+        <line x1="0" y1="6" x2="24" y2="6" stroke="#5A7A96" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr2)"/>
+      </svg>
+      webhook / async
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LEVEL 2 ═══════════ -->
+<div id="l2" class="panel">
+
+  <!-- 820 × 600 diagram -->
+  <div class="dia" style="width:820px;height:600px;">
+
+    <svg class="arrows" viewBox="0 0 820 600">
+      <defs>
+        <marker id="a2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 Z" fill="#5A7A96"/>
+        </marker>
+      </defs>
+
+      <!-- Telegram → FastAPI  (webhook) -->
+      <line x1="400" y1="83" x2="202" y2="132" stroke="#5A7A96" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+
+      <!-- FastAPI → PTB Dispatcher -->
+      <line x1="262" y1="172" x2="548" y2="172" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+
+      <!-- PTB → Ingestion Service -->
+      <line x1="600" y1="212" x2="175" y2="257" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+
+      <!-- PTB → Digest Service -->
+      <line x1="648" y1="212" x2="410" y2="257" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+
+      <!-- PTB → Scheduler -->
+      <line x1="698" y1="212" x2="698" y2="257" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+
+      <!-- Ingestion → GeminiProvider -->
+      <line x1="120" y1="337" x2="275" y2="392" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+
+      <!-- Digest → GeminiProvider -->
+      <line x1="410" y1="337" x2="370" y2="392" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+
+      <!-- Ingestion → PostgreSQL -->
+      <line x1="220" y1="337" x2="650" y2="512" stroke="#5A7A96" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a2)"/>
+
+      <!-- Digest → PostgreSQL -->
+      <line x1="510" y1="337" x2="680" y2="512" stroke="#5A7A96" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a2)"/>
+
+      <!-- GeminiProvider → Google Gemini API -->
+      <line x1="290" y1="472" x2="200" y2="515" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+    </svg>
+
+    <!-- Arrow labels -->
+    <div class="albl" style="left:248px;top:96px;">POST /webhook</div>
+    <div class="albl" style="left:372px;top:158px;">process_update()</div>
+    <div class="albl" style="left:320px;top:222px;">text/voice/doc handlers</div>
+    <div class="albl" style="left:572px;top:222px;">/digest command</div>
+    <div class="albl" style="left:705px;top:230px;">run_daily()</div>
+    <div class="albl" style="left:145px;top:358px;">classify / transcribe</div>
+    <div class="albl" style="left:394px;top:358px;">summarize</div>
+    <div class="albl" style="left:166px;top:467px;">Gemini API calls</div>
+
+    <!-- Telegram Bot API (external, top) -->
+    <div class="box ext" style="left:300px;top:10px;width:200px;min-height:73px;">
+      <div class="tag">External System</div>
+      <div class="name">Telegram Bot API</div>
+      <div class="desc">Delivers webhook POSTs; receives sendMessage calls</div>
+    </div>
+
+    <!-- FastAPI App -->
+    <div class="box sys" style="left:62px;top:132px;width:200px;min-height:80px;">
+      <div class="tag">Container · Web App</div>
+      <div class="name">FastAPI App</div>
+      <div class="tech">[Python · uvicorn]</div>
+      <div class="desc">/webhook · /health endpoints; DB table init on startup</div>
+    </div>
+
+    <!-- PTB Dispatcher -->
+    <div class="box sys" style="left:548px;top:132px;width:220px;min-height:80px;">
+      <div class="tag">Container · Bot Framework</div>
+      <div class="name">PTB Dispatcher</div>
+      <div class="tech">[python-telegram-bot v22]</div>
+      <div class="desc">Routes updates to handlers; manages JobQueue lifecycle</div>
+    </div>
+
+    <!-- Ingestion Service -->
+    <div class="box sys" style="left:20px;top:257px;width:200px;min-height:80px;">
+      <div class="tag">Container · Service</div>
+      <div class="name">Ingestion Service</div>
+      <div class="tech">[ingest_safe() · ingest()]</div>
+      <div class="desc">Resolves Content by Modality, classifies, applies noise gate, persists Entry</div>
+    </div>
+
+    <!-- Digest Service -->
+    <div class="box sys" style="left:310px;top:257px;width:200px;min-height:80px;">
+      <div class="tag">Container · Service</div>
+      <div class="name">Digest Service</div>
+      <div class="tech">[build_digest()]</div>
+      <div class="desc">Queries 24h Entries, groups by Category, orders by Priority, summarizes</div>
+    </div>
+
+    <!-- Scheduler -->
+    <div class="box sys" style="left:598px;top:257px;width:195px;min-height:80px;">
+      <div class="tag">Container · Scheduler</div>
+      <div class="name">Scheduler</div>
+      <div class="tech">[APScheduler · JobQueue]</div>
+      <div class="desc">Fires digest_job daily at configured UTC hour for all active Teams</div>
+    </div>
+
+    <!-- GeminiProvider -->
+    <div class="box sys" style="left:235px;top:392px;width:215px;min-height:80px;">
+      <div class="tag">Container · AI Provider</div>
+      <div class="name">GeminiProvider</div>
+      <div class="tech">[google-genai · Pydantic]</div>
+      <div class="desc">classify · transcribe · extract · summarize — structured output with Literal constraints</div>
+    </div>
+
+    <!-- Google Gemini API (external) -->
+    <div class="box ext" style="left:60px;top:515px;width:210px;min-height:67px;">
+      <div class="tag">External System</div>
+      <div class="name">Google Gemini API</div>
+      <div class="tech">[gemini-2.5-flash]</div>
+      <div class="desc">Audio · document · text inference</div>
+    </div>
+
+    <!-- PostgreSQL -->
+    <div class="box db" style="left:590px;top:512px;width:195px;min-height:70px;">
+      <div class="tag">Database</div>
+      <div class="name">PostgreSQL</div>
+      <div class="tech">[SQLModel · psycopg2]</div>
+      <div class="desc">Stores Entries with BigInt team/sender IDs</div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="border-color:var(--accent);background:var(--accent-bg)"></div>Internal Container</div>
+    <div class="leg"><div class="leg-dot" style="border-color:var(--ext);background:var(--ext-bg)"></div>External System</div>
+    <div class="leg"><div class="leg-dot" style="border-color:var(--db);background:var(--db-bg)"></div>Database</div>
+    <div class="leg" style="margin-left:auto;">
+      <svg width="30" height="12" viewBox="0 0 30 12">
+        <line x1="0" y1="6" x2="24" y2="6" stroke="#5A7A96" stroke-width="1" marker-end="url(#a2)"/>
+      </svg>
+      synchronous
+    </div>
+    <div class="leg">
+      <svg width="30" height="12" viewBox="0 0 30 12">
+        <line x1="0" y1="6" x2="24" y2="6" stroke="#5A7A96" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+      </svg>
+      async / query
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(id, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    btn.classList.add('on');
+  }
+</script>
