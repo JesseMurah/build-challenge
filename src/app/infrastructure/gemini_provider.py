@@ -25,10 +25,19 @@ class GeminiProvider:
 
     def classify(self, content: str) -> tuple[Category, Priority]:
         prompt = (
-            "Classify the following operational message.\n"
-            "Respond with JSON only: {\"category\": \"<value>\", \"priority\": \"<value>\"}\n"
-            f"Category must be one of: request, issue, decision, update, question, noise\n"
-            f"Priority must be one of: now, today, whenever\n\n"
+            "You are classifying a message from a team's operational group chat.\n\n"
+            "Category — pick exactly one:\n"
+            "  issue    = a problem, blocker, incident, or risk (something broken or blocking work)\n"
+            "  request  = someone needs another person to DO something\n"
+            "  decision = a decision made or one that needs to be made\n"
+            "  update   = status/progress/FYI with no action needed\n"
+            "  question = an open question waiting for an answer\n"
+            "  noise    = chatter, reactions, or anything not operationally relevant\n\n"
+            "Priority — pick exactly one:\n"
+            "  now      = urgent, someone is blocked or it's time-sensitive TODAY\n"
+            "  today    = should be handled today but not drop-everything urgent\n"
+            "  whenever = no time pressure, informational or backlog\n\n"
+            "Respond with JSON only, no explanation: {\"category\": \"<value>\", \"priority\": \"<value>\"}\n\n"
             f"Message: {content}"
         )
         response = self._client.models.generate_content(model=self._model, contents=prompt)

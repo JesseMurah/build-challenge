@@ -4,7 +4,7 @@ import enum
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import BigInteger, Column, JSON
 from sqlmodel import Field, SQLModel
 
 
@@ -31,8 +31,8 @@ class Priority(str, enum.Enum):
 
 class Entry(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    team_id: int = Field(index=True)
-    sender_id: int
+    team_id: int = Field(sa_column=Column(BigInteger, index=True))
+    sender_id: int = Field(sa_column=Column(BigInteger))
     sender_name: str
     modality: Modality
     category: Category

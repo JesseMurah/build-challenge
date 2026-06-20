@@ -28,7 +28,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
-engine = create_engine(settings.database_url, echo=False)
+_db_url = settings.database_url.replace("postgres://", "postgresql://", 1)
+engine = create_engine(_db_url, echo=False)
 
 
 # ---------------------------------------------------------------------------
@@ -39,6 +40,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     msg = update.message
     if not msg or not msg.from_user:
         return
+    logger.info("handle_text: chat_id=%s text=%r", msg.chat.id, msg.text)
     tg = TelegramUpdate(
         team_id=msg.chat.id,
         sender_id=msg.from_user.id,
@@ -49,7 +51,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         raw={"message_id": msg.message_id},
     )
     with Session(engine) as session:
-        ingest_safe(tg, context.bot_data["provider"], session)
+        entry = ingest_safe(tg, context.bot_data["provider"], session)
+        logger.info("handle_text: entry=%s", entry)
 
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -130,13 +133,10 @@ async def lifespan(app: FastAPI):
     # Wire shared resources into bot_data
     ptb_app.bot_data["provider"] = get_gemini_provider()
 
-    # Register handlers (group chats only + DMs for /digest)
-    group_filter = filters.ChatType.GROUPS | filters.ChatType.SUPERGROUP
-    ptb_app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND & group_filter, handle_text)
-    )
-    ptb_app.add_handler(MessageHandler(filters.VOICE & group_filter, handle_voice))
-    ptb_app.add_handler(MessageHandler(filters.Document.ALL & group_filter, handle_document))
+    # Register handlers (all chat types for now — narrow after confirming captures work)
+    ptb_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    ptb_app.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    ptb_app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     ptb_app.add_handler(CommandHandler("digest", handle_digest_command))
 
     # Start PTB (initialises JobQueue etc.)
