@@ -1,3 +1,10 @@
+## Branching
+
+- `main` — production. Don't commit feature work directly; merge from `dev`.
+- `dev` — test/staging. Integration target for features.
+- `feature/<name>` — one branch per feature; branch from `dev`.
+- `fix/<name>` — one branch per fix.
+
 ## Agent skills
 
 ### Issue tracker
