@@ -14,7 +14,8 @@ pip install google-genai          # NOT google-generativeai (different package)
 from google import genai
 from google.genai import types
 
-client = genai.Client()           # reads GEMINI_API_KEY from env
+client = genai.Client()                        # reads GEMINI_API_KEY from env
+client = genai.Client(api_key="your-key")     # or pass explicitly (preferred in factory)
 ```
 
 ### Audio transcription
