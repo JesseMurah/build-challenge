@@ -8,7 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     gemini_api_key: str
     telegram_bot_token: str
-    database_url: str
+    database_url: str          # postgresql://user:pass@host:5432/dbname
+    webhook_url: str           # https://xxxx.ngrok-free.app  (no trailing slash)
+    digest_hour: int = 8       # UTC hour for the daily Digest (default 08:00)
 
     model_config = SettingsConfigDict(
         env_file=".env",
