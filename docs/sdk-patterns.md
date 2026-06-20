@@ -157,6 +157,37 @@ application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
 ```
 
+### JobQueue — scheduling daily tasks
+
+JobQueue starts automatically with `run_polling()` / `run_webhook()` — no manual start.
+
+```python
+import datetime
+
+# Register a daily job at a fixed clock time
+application.job_queue.run_daily(
+    callback,
+    time=datetime.time(8, 0, tzinfo=datetime.timezone.utc),  # 08:00 UTC daily
+    chat_id=team_id,           # accessible as context.job.chat_id inside callback
+    data={"team_id": team_id}, # any object — accessible as context.job.data
+)
+
+# Callback signature — no update arg
+async def digest_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(chat_id=context.job.chat_id, text="digest text")
+```
+
+Pass shared resources (DB session, provider) via `application.bot_data`:
+
+```python
+application.bot_data["session"] = session
+application.bot_data["provider"] = provider
+
+# Inside callback:
+session  = context.bot_data["session"]
+provider = context.bot_data["provider"]
+```
+
 ---
 
 ## FastAPI
