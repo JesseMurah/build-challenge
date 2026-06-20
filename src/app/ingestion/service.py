@@ -7,7 +7,16 @@ from app.domain.ports import AIProvider, TelegramUpdate
 
 
 def ingest(update: TelegramUpdate, provider: AIProvider, session: Session) -> Entry | None:
-    content = update.text or ""
+    if update.voice_bytes is not None:
+        modality = Modality.voice
+        content = provider.transcribe(update.voice_bytes)
+    elif update.document_bytes is not None:
+        modality = Modality.document
+        content = provider.extract(update.document_bytes)
+    else:
+        modality = Modality.text
+        content = update.text or ""
+
     category, priority = provider.classify(content)
 
     if category is Category.noise:
@@ -17,7 +26,7 @@ def ingest(update: TelegramUpdate, provider: AIProvider, session: Session) -> En
         team_id=update.team_id,
         sender_id=update.sender_id,
         sender_name=update.sender_name,
-        modality=Modality.text,
+        modality=modality,
         category=category,
         priority=priority,
         content=content,
