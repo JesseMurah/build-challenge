@@ -18,8 +18,8 @@ class FakeAIProvider:
     def extract(self, document: bytes) -> str:
         return "extracted text"
 
-    def summarize(self, entries):
-        return "summary"
+    def summarize(self, entries, draft: str) -> str:
+        return draft  # echo the structured draft so tests can assert on its content
 
 
 @pytest.fixture
