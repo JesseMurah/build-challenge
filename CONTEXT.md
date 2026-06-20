@@ -42,18 +42,24 @@ derive from Content, never from the raw audio or original file.
 _Avoid_: Body, Text, Payload, Transcript (use "Transcription" only for the voice→text step)
 
 **Category**:
-The operational kind of a Candidate — what it *is* (e.g. request, status report,
-decision, question, incident). AI-assigned. The interesting classification axis,
-and also the noise gate: one value means "noise / not operational", which causes
-the Candidate to be discarded rather than promoted to an Entry.
+The operational kind of a Candidate, AI-assigned — the interesting classification
+axis, and also the noise gate. One of:
+- **request** — someone needs another person to *do* something
+- **issue** — a problem, blocker, incident, or risk
+- **decision** — a decision made, or one that's needed
+- **update** — status / progress / FYI, no action needed
+- **question** — an open question awaiting an answer
+- **noise** — not operational (chatter, reactions); the Candidate is discarded,
+  never promoted to an Entry
 _Avoid_: Type, Class, Label
-_Note_: value set TBD (must include a "noise" value).
 
 **Priority**:
-How soon a human needs to act on an Entry, on a small ordered scale (e.g. now /
-today / whenever). AI-assigned.
-_Avoid_: Urgency, Severity, Importance
-_Note_: scale TBD.
+How soon a human needs to act on an Entry, AI-assigned. Time-anchored and ordered,
+independent of Category. One of:
+- **now** — needs attention today; someone is blocked or it's time-sensitive
+- **today** — should be handled within the day, not drop-everything urgent
+- **whenever** — no time pressure; informational or backlog
+_Avoid_: Urgency, Severity, Importance, High/Medium/Low
 
 **Insight**:
 An AI-generated summary, recommendation, or observation derived from one or more
